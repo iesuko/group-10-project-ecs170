@@ -1,0 +1,46 @@
+group_members:
+  group_member_1: 
+    name: Iliana Suko
+    student_id: 920571295
+    email: iesuko@ucdavis.edu 
+    github_username: iesuko
+  group_member_2:
+    name: Kayla Ly 
+    student_id: 921252173
+    email: kayly@ucdavis.edu
+    github_username:
+  group_member_3:
+    name: Heaven Berhe
+    student_id: 919670686
+    email: hkberhe@ucdavis.edu
+    github_username: HeavenB
+  group_member_4: 
+    name: Safoorah Siddiqui
+    student_id: 920916368
+    email: sbsiddiqui@ucdavis.edu
+    github_username: safoorahsiddiqui
+  group_member_5:
+    name: Laila Raoufi
+    student_id: 921041601
+    email: lraoufi@ucdavis.edu
+    github_username: lraoufi
+  group_member_6:
+    name: Dana Yu
+    student_id: 921066534
+    email: dyuyu@ucdavis.edu
+    github_username: danayuwwc
+  group_member_7:
+    name: Saghana Shree Vijayragunath 
+    student_id: 921972314
+    email: svijayragunath@ucdavis.edu
+    github_username: saghana-vijay
+  group_member_8:
+    name: Patricia Diaz
+    student_id: 924216080
+    email: patdiaz@ucdavis.edu
+    github_username: pyrhodiaz
+  group_member_9:
+    name: Kushagra Rishi
+    student_id: 922506200
+    email: krrishi@ucdavis.edu
+    github_username: k-crypt  
