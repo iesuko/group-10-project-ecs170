@@ -1,20 +1,17 @@
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
-from transformers import M2M100ForConditionalGeneration, M2M100Tokenizer
 import torch
-
-# Loading the Language Detection Model 
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
+from transformers import M2M100Tokenizer, M2M100ForConditionalGeneration
+ 
 detection_model_name = "papluca/xlm-roberta-base-language-detection"
 detection_tokenizer = AutoTokenizer.from_pretrained(detection_model_name)
 detection_model = AutoModelForSequenceClassification.from_pretrained(detection_model_name)
 
-print("Loaded Language Detector") #Sanity Check
-print("Label mapping:", detection_model.config.id2label) #Prints map of language codes 
+print("Loaded Language Detector")
+print("Label mapping:", detection_model.config.id2label)
 
-#Function for predicting the language 
-#Detects the language and resutns the labaguage label and confidence
 def predict_language(text):
     """Detect language and return (label, confidence)."""
-    inputs = detection_tokenizer(text, return_tensors="pt", truncation=True) #
+    inputs = detection_tokenizer(text, return_tensors="pt", truncation=True)
     with torch.no_grad():
         outputs = detection_model(**inputs)
         probs = torch.softmax(outputs.logits, dim=-1)
@@ -23,18 +20,12 @@ def predict_language(text):
         label = detection_model.config.id2label[pred_id]
     return label, confidence
 
-# Loading the Translation Model
-# M2M100 multilingual translation model 
-# Supports ~100 language
-translation_model_name = "facebook/m2m100_418M"
+translation_model_name = "facebook/m2m100_418M" 
 translation_tokenizer = M2M100Tokenizer.from_pretrained(translation_model_name)
 translation_model = M2M100ForConditionalGeneration.from_pretrained(translation_model_name)
 
-print("\nLoaded M2M100 Translation Model\n") #Sanity Check 
+print("\nLoaded M2M100 Translation Model\n")
 
-# Dataset (Detection)
-# Maps the language detector codes to the translators codes 
-# Models use different language codes 
 dataset = {
     "en": "en",
     "de": "de",
@@ -42,27 +33,19 @@ dataset = {
     "es": "es",
     "it": "it",
     "ru": "ru",
-    "zh": "zh_CN",
+    "zh": "zh",
     "ja": "ja",
     "ar": "ar",
 }
 
 def safe_translate(text, target_lang="en", min_conf=0.60):
     """
-    Returns: (detected_lang, confidence, translation_or_message)
-    Only translates if:
-      - detection confidence >= min_conf
-      - detected language is supported by translator
+    Translation ALWAYS runs. No confidence checks, no language filter.
+    Returns: (detected_lang, confidence, translation)
     """
     label, confidence = predict_language(text)
 
-    if confidence < min_conf:
-        return label, confidence, "Translation skipped (low confidence)."
-
-    if label not in dataset:
-        return label, confidence, "Translation skipped (language not supported by translation model)."
-
-    src_lang = dataset[label]
+    src_lang = dataset.get(label, "en")
     translation_tokenizer.src_lang = src_lang
 
     try:
@@ -77,33 +60,28 @@ def safe_translate(text, target_lang="en", min_conf=0.60):
     except Exception as e:
         return label, confidence, f"Translation failed (runtime error: {str(e)})"
 
-#Test Cases 
-
-# High Resource 
 high_resource_texts = [
-    "Hello, how are you?",            # English
-    "Guten Morgen, wie geht es dir?", # German
-    "Bonjour, je suis étudiant.",     # French
-    "Hola, ¿cómo estás?"              # Spanish
-]
-# Mixed Resource 
-other_texts = [
-    "Ciao, come stai?",            # Italian
-    "Привет, как дела?",           # Russian
-    "こんにちは、お元気ですか？",       # Japanese
-    "你好，你怎么样？",                # Chinese
-    "مرحبا كيف حالك؟"                # Arabic
-]
-# Low Resource (Out of dataset)
-low_resource_texts = [
-    "Sawubona, unjani?",                 # Zulu
-    "Sannu, lafiya lau?",                # Hausa
-    "Salve, quid agis?",                 # Latin
-    "ਸਤ ਸ੍ਰੀ ਅਕਾਲ, ਤੁਸੀਂ ਕਿਵੇਂ ਹੋ?",     # Punjabi
-    "Mingalaba, ne kaung la?"            # Burmese
+    "Hello, how are you?",            
+    "Guten Morgen, wie geht es dir?", 
+    "Bonjour, je suis étudiant.",     
+    "Hola, ¿cómo estás?"              
 ]
 
-#Function for running the tests 
+other_texts = [
+    "Ciao, come stai?",            
+    "Привет, как дела?",           
+    "こんにちは、お元気ですか？",       
+    "你好，你怎么样？",                
+    "مرحبا كيف حالك؟"                
+]
+
+low_resource_texts = [
+    "Sawubona, unjani?",                 
+    "Sannu, lafiya lau?",                
+    "Salve, quid agis?",                 
+    "ਸਤ ਸ੍ਰੀ ਅਕਾਲ, ਤੁਸੀਂ ਕਿਵੇਂ ਹੋ?",     
+    "Mingalaba, ne kaung la?"            
+]
 
 def run_tests(name, data):
     print(f"\n--- {name} ---\n")
@@ -114,7 +92,54 @@ def run_tests(name, data):
         print(f"Translation result: {trans}")
         print()
 
+validation_set = [
+    {"text": "Hello, how are you?", "lang": "en", "translation_en": "Hello, how are you?"},
+    {"text": "Guten Morgen, wie geht es dir?", "lang": "de", "translation_en": "Good morning, how are you?"},
+    {"text": "Bonjour, je suis étudiant.", "lang": "fr", "translation_en": "Hello, I am a student."},
+    {"text": "Hola, ¿cómo estás?", "lang": "es", "translation_en": "Hello, how are you?"},
+    {"text": "Ciao, come stai?", "lang": "it", "translation_en": "Hello, how are you?"},
+    {"text": "Привет, как дела?", "lang": "ru", "translation_en": "Hello, how are you?"},
+    {"text": "こんにちは、お元気ですか？", "lang": "ja", "translation_en": "Hello, how are you?"},
+    {"text": "你好，你怎么样？", "lang": "zh", "translation_en": "Hello, how are you?"},
+    {"text": "مرحبا كيف حالك؟", "lang": "ar", "translation_en": "Hello, how are you?"},
+]
+
+def validate_model(validation_set, target_lang="en", min_conf=0.6):
+    total = len(validation_set)
+    correct_detection = 0
+    successful_translation = 0
+
+    print("\n--- Validation Results ---\n")
+    for sample in validation_set:
+        text = sample["text"]
+        true_lang = sample["lang"]
+        ref_translation = sample.get("translation_en")
+
+        detected_lang, confidence, translation = safe_translate(text, target_lang=target_lang)
+
+        detection_match = detected_lang == true_lang
+        if detection_match:
+            correct_detection += 1
+
+        translation_match = False
+        if ref_translation:
+            translation_match = translation.strip() == ref_translation.strip()
+            if translation_match:
+                successful_translation += 1
+
+        print(f"Text: {text}")
+        print(f"True Language: {true_lang} | Detected: {detected_lang} | Confidence: {confidence:.2f}")
+        print(f"Translation: {translation}")
+        print(f"Detection Correct: {detection_match} | Translation Correct: {translation_match}")
+        print("-" * 50)
+
+    detection_accuracy = correct_detection / total
+    translation_success_rate = successful_translation / total
+
+    print(f"\nDetection Accuracy: {detection_accuracy:.2f}")
+    print(f"Translation Success Rate: {translation_success_rate:.2f}")
 
 run_tests("High-Resource Languages Test", high_resource_texts)
 run_tests("Other Supported Languages Test", other_texts)
-run_tests("Low-Resource / Out-of-Dataset Languages Test", low_resource_texts)
+validate_model(validation_set)
+
