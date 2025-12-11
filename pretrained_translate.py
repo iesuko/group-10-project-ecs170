@@ -1,0 +1,5 @@
+from transformers import M2M100Tokenizer, M2M100ForConditionalGeneration
+
+translation_model_name = "facebook/m2m100_418M"
+translation_tokenizer = M2M100Tokenizer.from_pretrained(translation_model_name)
+translation_model = M2M100ForConditionalGeneration.from_pretrained(translation_model_name)
